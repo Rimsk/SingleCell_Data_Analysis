@@ -73,6 +73,10 @@ Document methodologies, findings, and insights for reproducibility and further r
 This pipeline can be implemented using tools like Seurat, Scanpy, or Bioconductor, depending on your preferred R programming environment.
 
 
+# License
+
+Pipeline is licensed under GPL-3. Anyone is welcome to go through the material in order to learn about analysis of scRNA-seq data. If you plan to use the material for your own teaching, we would appreciate if you tell us about it in addition to providing a suitable citation.
+
 
 # Contact
 
