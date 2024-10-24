@@ -2,7 +2,7 @@
 Single-cell RNA sequencing (scRNA-seq) is a cutting-edge technique that allows researchers to analyze the gene expression of individual cells. This method provides a deeper understanding of cellular heterogeneity and can reveal insights into developmental processes, disease mechanisms, and responses to treatments. As technology advances, scRNA-seq is becoming an essential tool in genomics research.
 
 ## The Reason 
-Single-cell RNA sequencing is becoming increasingly popular and could soon be as commonplace as PCR. I just got my hands on some 10x Genomics single-cell RNAseq data to explore, so I wanted to take this opportunity to note my insights. I hope they prove useful to others as well.
+Single-cell RNA sequencing is gaining traction and may soon be as widely used as PCR. I downloaded the 10x Genomics single-cell RNAseq data (GSE146771) from GEO, focusing on colorectal cancer, and I wanted to take this opportunity to document my insights. I hope these notes will be helpful to others as well.
 
 Here’s a comprehensive pipeline for single-cell RNA sequencing data analysis, covering preprocessing, normalization, scaling, dimensionality reduction, clustering, and differential expression analysis:
 
