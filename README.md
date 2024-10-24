@@ -4,8 +4,35 @@ Single-cell RNA sequencing (scRNA-seq) is a cutting-edge technique that allows r
 ## The Reason 
 Single-cell RNA sequencing is gaining traction and may soon be as widely used as PCR. I downloaded the 10x Genomics single-cell RNAseq data (GSE146771) from GEO, focusing on colorectal cancer, and I wanted to take this opportunity to document my insights. I hope these notes will be helpful to others as well.
 
+
+# Results 
+The HTML file in the repository displays all the figures and provides a detailed explanation of each step, helping users to understand the process better.
+
 # R Version 4.3.0
-# Libraries 
+
+
+# Libraries and versions 
+$ggplot2
+[1] 3 5 1
+
+$methods
+[1] 4 3 0
+
+$edgeR
+[1]  4  0 16
+
+$Seurat
+[1] 5 1 0
+
+$dplyr
+[1] 1 1 4
+
+$rafalib
+[1] 1 0 2
+
+$devtools
+[1] 2 4 5
+
 
 Here’s a comprehensive pipeline for single-cell RNA sequencing data analysis, covering preprocessing, normalization, scaling, dimensionality reduction, clustering, and differential expression analysis:
 
