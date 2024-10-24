@@ -6,7 +6,7 @@ Single-cell RNA sequencing is becoming increasingly popular and could soon be as
 
 Here’s a comprehensive pipeline for single-cell RNA sequencing data analysis, covering preprocessing, normalization, scaling, dimensionality reduction, clustering, and differential expression analysis:
 
-# 1. Data Preprocessing
+## 1. Data Preprocessing
 Load Data: Import the raw data (e.g., from 10x Genomics).
 Quality Control: Filter cells based on metrics such as:
 Total counts per cell
