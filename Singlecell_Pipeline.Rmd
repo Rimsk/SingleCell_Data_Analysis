@@ -1,0 +1,295 @@
+---
+title: "Single_cell_pipeline"
+output: html_document
+date: "2023-10-17"
+---
+
+
+#1. Load the libraies
+```{r}
+library(ggplot2)
+library(methods)
+library(edgeR)
+library(Seurat)
+library(dplyr)
+library(rafalib)
+library(devtools)
+
+
+```
+
+
+
+#2. Import data
+# Change the directories for your data
+```{r}
+GSE146771_CRC_Leukocyte_10x_Metadata<- read.csv("/Users/rxk519/Desktop/Projects/CRC_Project/CRC_datasets_GSE146771/GSE146771_CRC.Leukocyte.10x.Metadata.txt", sep = "\t")
+vec.cell.type <- GSE146771_CRC_Leukocyte_10x_Metadata$CellName
+names(vec.cell.type) <- GSE146771_CRC_Leukocyte_10x_Metadata$Global_Cluster
+
+#counts
+#GSE146771_CRC_Leukocyte_10x_TPM<- read.table("/Users/rxk519/Desktop/Projects/CRC_Project/CRC_datasets_GSE146771/GSE146771_CRC.Leukocyte.10x.TPM.txt", fill = TRUE, header = TRUE, sep = "")
+#saveRDS(GSE146771_CRC_Leukocyte_10x_TPM, file = "/Users/rxk519/Desktop/Projects/CRC_Project/CRC_datasets_GSE146771/data/GSE146771_CRC_Leukocyte_10x_TPM.rds")
+
+
+GSE146771_CRC_Leukocyte_10x_TPM<-readRDS("/Users/rxk519/Desktop/Projects/CRC_Project/CRC_datasets_GSE146771/data/GSE146771_CRC_Leukocyte_10x_TPM.rds")
+```
+
+#3.create a seurat project
+```{r} 
+#create a seurat object
+dim(GSE146771_CRC_Leukocyte_10x_TPM) #dim of data
+
+
+
+pbmc <- CreateSeuratObject(counts = GSE146771_CRC_Leukocyte_10x_TPM, project = "CRC", min.cells = 3, min.features = 200)
+
+pbmc
+```
+
+
+#4.add variables to the seurat object
+#add the variable to the metadata(Sub_ClusterID, Global_Cluster, CellName)
+#CellName
+```{r}
+cell.type <- GSE146771_CRC_Leukocyte_10x_Metadata$Global_Cluster
+names(cell.type) <- GSE146771_CRC_Leukocyte_10x_Metadata$CellName
+pbmc <- AddMetaData(object = pbmc, metadata = cell.type, col.name = "cell_type")
+#Sub_ClusterID
+tumor.name <- GSE146771_CRC_Leukocyte_10x_Metadata$Sub_ClusterID
+names(tumor.name) <- GSE146771_CRC_Leukocyte_10x_Metadata$CellName
+pbmc <- AddMetaData(object = pbmc, metadata = tumor.name, col.name = "tumor_name")
+
+
+```
+
+#5. Preprocessing Steps 
+#5.1 calculate mitocondria percentage
+```{r}
+
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+```
+
+#5.2FeatureScatter plot 
+#FeatureScatter is typically used to visualize gene-gene relationships, but can be used for anything calculated by the object
+```{r}
+# for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
+par(mfrow = c(1, 2))
+FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
+FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+
+```
+
+#5.3filter out cells that have unique gene counts (nFeature_RNA) over 2,500 or less than
+```{r}
+# 200 Note that > and < are used to define a'gate'.  
+#-Inf and Inf should be used if you don't want a lower or upper threshold.
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+pbmc <- SetIdent(pbmc, value = pbmc@meta.data$cell_type)
+```
+
+
+#5.4 Normalization step
+```{r}
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+#5.5 Detection of variable genes across the single cells
+```{r}
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+```
+
+#5.6 Identify the 10 most highly variable genes
+```{r}
+top10 <- head(VariableFeatures(pbmc), 10)
+```
+
+
+#5.7 plot variable features with and without labels
+
+```{r fig.width=12, fig.height=8}
+par(mfrow = c(1, 2))
+plot1 <- VariableFeaturePlot(pbmc)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+
+
+#6. scale Data 
+```{r}
+all.genes <- rownames(pbmc)
+pbmc <- ScaleData(pbmc, features = all.genes)
+```
+
+#6.2 Perform linear dimensional reduction (PCA)
+```{r, fig.width=10, fig.height=8}
+#perform PCA on the scaled data
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+
+print(pbmc[["pca"]], dims = 1:5, nfeatures = 5)
+
+VizDimLoadings(pbmc, dims = 1:2, reduction = "pca")
+```
+
+
+
+#6.3 DimHeatmap for Genes by PCs
+```{r, fig.width=10, fig.height=8}
+#PC1 plot 
+DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)
+```
+
+
+#6.4 DimHeatmap for Genes by PCs (15)
+#PC1-PC15 plots
+```{r, fig.width=10, fig.height=8}
+DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
+#DimPlot(pbmc, reduction = "pca")
+```
+
+#compiuting the nearest neighbor graph 
+```{r}
+
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+```
+
+
+#computing the clusters 
+```{r}
+
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+```
+
+#RunMap Non-linear dimension reduction(UMAP/Tsne)
+```{r}
+#head(Idents(pbmc), 5)
+#-----------------------------------
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+```
+
+
+#Dimplot without selecting Ident( variable)
+```{r, fig.width=10, fig.height=8}
+DimPlot(pbmc, reduction = "umap")
+```
+
+#Dimplot selecting Ident as cell_type
+```{r, fig.width=10, fig.height=8}
+#using the cell_type to create a pca plot 
+
+pbmc <- SetIdent(pbmc, value = pbmc@meta.data$cell_type)
+DimPlot(pbmc, label = T , repel = T, label.size = 3) + NoLegend()
+```
+#Finding differentially expressed features (cluster biomarkers)
+
+```{r}
+#Find differentially expressed features between Myeloid cell and all other cells, only
+# search for positive markers
+
+
+Myeloid.markers <- FindMarkers(object = pbmc, ident.1 = "Myeloid cell", min.pct = 0.25, test.use = "roc", only.pos = TRUE)
+
+head(Myeloid.markers)
+
+```
+
+
+
+```{r}
+#differential expression between two specific groups of cells, specify the ident.1 and ident.2 parameters
+#DE genes between to CD4 cell & CD8 T cell
+
+CD.markers <- FindMarkers(object = pbmc, ident.1 = "CD4 T cell", ident.2 = "CD8 T cell", min.pct = 0.25)
+
+
+```
+
+
+```{r, fig.width=10, fig.height=8}
+
+FeaturePlot(object = pbmc, 
+            features = c("TREM1", "TREM2", "LILRB4A", "SIGLEC15", "REL", "PDL1", "PDCD1LG2","CD274", "SIGLEC10", "MERTK", "SIRPA", "PDCD1","NT5E","ENTPD1","CD276", "CD83", "TNFR2" ))
+pbmc.markers <- FindAllMarkers(object = pbmc, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+
+```
+
+
+```{r, fig.width=10, fig.height=8}
+VlnPlot(object = pbmc, features = c("TREM1", "TREM2"))
+
+# view results
+```
+
+#Cell marker genes
+```{r}
+# find all markers of cluster 1 using default parameters
+markers_genes <- FindAllMarkers(pbmc, log2FC.threshold = 0.2, test.use = "wilcox",
+    min.pct = 0.1, min.diff.pct = 0.2, only.pos = TRUE, max.cells.per.ident = 50,
+    assay = "RNA")
+```
+
+#select the top 25 up regulated genes for plotting
+```{r}
+markers_genes %>%
+    group_by(cluster) %>%
+    top_n(-25, p_val_adj) -> top25
+top25
+```
+#We can now select the top 25 up regulated genes for plotting
+```{r, fig.width=10, fig.height=8}
+mypar(2, 5, mar = c(4, 6, 3, 1))
+for (i in unique(top25$cluster)) {
+    barplot(sort(setNames(top25$avg_log2FC, top25$gene)[top25$cluster == i], F),
+        horiz = T, las = 1, main = paste0(i, " vs. rest"), border = "white", yaxs = "i")
+    abline(v = c(0, 0.25), lty = c(1, 2))
+}
+
+
+```
+
+```{r}
+markers_genes %>%
+    group_by(cluster) %>%
+    top_n(-5, p_val_adj) -> top5
+
+# create a scale.data slot for the selected genes
+pbmc <- ScaleData(pbmc, features = as.character(unique(top5$gene)), assay = "RNA")
+DoHeatmap(pbmc, features = as.character(unique(top5$gene)), group.by = "cell_type",
+    assay = "RNA")
+
+```
+
+
+```{r, fig.width=10, fig.height=8}
+DotPlot(pbmc, features = rev(as.character(unique(top5$gene))), group.by = "cell_type",
+    assay = "RNA") + coord_flip()
+
+```
+
+#find markers for every cluster compared to all remaining cells, report
+```{r}
+All.markers <- FindAllMarkers(pbmc, only.pos = T, min.pct = 0.5, logfc.threshold = 0.5)
+
+dim(All.markers)
+table(All.markers$cluster)
+
+All.markers %>% group_by(cluster) %>% top_n(2, avg_log2FC)
+
+```
+
+
+
+#Identify the markers in the clusters
+```{r, fig.width=10, fig.height=8}
+FeaturePlot(pbmc, features = c("TREM1", "TREM2", "LILRB4A", "SIGLEC15", "REL", "PDL1", "PDCD1LG2","CD274", "SIGLEC10", "MERTK", "SIRPA", "PDCD1","NT5E","ENTPD1","CD276", "CD83", "TNFR2" ))
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
