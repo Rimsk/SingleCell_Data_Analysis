@@ -67,4 +67,4 @@ Relate the identified clusters and marker genes to biological pathways or cell t
 ## 12. Documentation
 Record Findings:
 Document methodologies, findings, and insights for reproducibility and further research.
-This pipeline can be implemented using tools like Seurat, Scanpy, or Bioconductor, depending on your preferred programming environment (R or Python).
+This pipeline can be implemented using tools like Seurat, Scanpy, or Bioconductor, depending on your preferred R programming environment.
