@@ -12,19 +12,13 @@ The HTML file in the repository displays all the figures and provides a detailed
 
 
 # Libraries and versions 
-$ggplot2 3.5.1
-
-$methods 4.3.0
-
-$edgeR 4.0.16
-
-$Seurat 5.1.0
-
-$dplyr 1.1.4
-
-$rafalib 1.0.2
-
-$devtools 2.4.5
+ggplot2 3.5.1
+methods 4.3.0
+edgeR 4.0.16
+Seurat 5.1.0
+dplyr 1.1.4
+rafalib 1.0.2
+devtools 2.4.5
 
 
 Here’s a comprehensive pipeline for single-cell RNA sequencing data analysis, covering preprocessing, normalization, scaling, dimensionality reduction, clustering, and differential expression analysis:
