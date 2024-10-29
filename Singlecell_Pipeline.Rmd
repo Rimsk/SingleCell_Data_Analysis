@@ -1,6 +1,7 @@
 ---
 title: "Single_cell_pipeline"
 output: html_document
+author: "Rimpi Khurana"
 date: "2023-10-17"
 ---
 
